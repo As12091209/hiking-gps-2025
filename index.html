@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大小霸平安回報</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { font-size: 1.5rem; color: #4CAF50; }
+        .card {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .gps-info { font-family: monospace; color: #aaa; margin-bottom: 10px; font-size: 0.9rem;}
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 5px 0;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-update { background-color: #2196F3; color: white; margin-bottom: 20px;}
+        .btn-status { background-color: #333; color: #eee; border: 1px solid #555;}
+        .btn-status:active { background-color: #4CAF50; color: black; }
+        
+        textarea {
+            width: 100%;
+            height: 80px;
+            background: #2d2d2d;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1rem;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+        .copy-hint { color: #F44336; font-size: 0.9rem; margin-top: 5px; display: none;}
+    </style>
+</head>
+<body>
+    <br>
+    <h1>⛰️ 大小霸回報器</h1>
+    <br>
+    <div class="card">
+        <button class="btn-update" onclick="getGPS()">📍 更新 GPS 位置</button>
+        <div class="gps-info" id="gpsDisplay">等待定位中...</div>
+    </div>
+    <br>
+    <div class="card">
+        <p>選擇狀態：</p>
+        <button class="btn-status" onclick="generateMsg('✅ 抵達/平安')">✅ 抵達 / 平安</button>
+        <button class="btn-status" onclick="generateMsg('🚀 出發 / 續行')">🚀 出發 / 續行</button>
+        <button class="btn-status" onclick="generateMsg('⚠️ 延遲 / 狀況')">⚠️ 延遲 / 狀況</button>
+        <button class="btn-status" onclick="generateMsg('🛑 撤退 / 紮營')">🛑 撤退 / 紮營</button>
+    </div>
+    <br>
+    <div class="card">
+        <p>回報訊息 (點擊複製)：</p>
+        <textarea id="msgArea" readonly onclick="copyText()"></textarea>
+        <div class="copy-hint" id="copyHint">已複製！快去貼上！</div>
+    </div>
+    <br>
+    <script>
+        let currentLat = "無訊號";
+        let currentLon = "無訊號";
+        let googleMapLink = "";
+
+        // 1. 抓取 GPS
+        function getGPS() {
+            document.getElementById('gpsDisplay').innerText = "定位中...";
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            } else {
+                document.getElementById('gpsDisplay').innerText = "瀏覽器不支援 GPS";
+            }
+        }
+
+        function showPosition(position) {
+            currentLat = position.coords.latitude.toFixed(5);
+            currentLon = position.coords.longitude.toFixed(5);
+            let accu = Math.round(position.coords.accuracy);
+            
+            document.getElementById('gpsDisplay').innerHTML = 
+                `緯度: ${currentLat}<br>經度: ${currentLon}<br>誤差: ${accu}公尺`;
+            
+            // 修正過的 Google Maps 連結
+            googleMapLink = `http://googleusercontent.com/maps.google.com/maps?q=${currentLat},${currentLon}`;
+        }
+
+        function showError(error) {
+            let msg = "";
+            switch(error.code) {
+                case error.PERMISSION_DENIED: msg = "請允許取用位置權限"; break;
+                case error.POSITION_UNAVAILABLE: msg = "無法取得位置 (請到空曠處)"; break;
+                case error.TIMEOUT: msg = "定位逾時"; break;
+                default: msg = "定位錯誤";
+            }
+            document.getElementById('gpsDisplay').innerText = msg;
+        }
+
+        // 2. 生成訊息
+        function generateMsg(status) {
+            if(currentLat === "無訊號") {
+                alert("請先點擊上方藍色按鈕取得 GPS！");
+                return;
+            }
+            
+            let now = new Date();
+            let timeStr = (now.getMonth()+1) + "/" + now.getDate() + " " + 
+                          String(now.getHours()).padStart(2, '0') + ":" + 
+                          String(now.getMinutes()).padStart(2, '0');
+
+            let finalMsg = `【${status}】\n時間：${timeStr}\n位置：${currentLat}, ${currentLon}\n地圖：${googleMapLink}`;
+            
+            document.getElementById('msgArea').value = finalMsg;
+            copyText(); 
+        }
+
+        function copyText() {
+            let copyText = document.getElementById("msgArea");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            
+            try {
+                navigator.clipboard.writeText(copyText.value).then(() => {
+                    showHint();
+                });
+            } catch (err) {
+                document.execCommand("copy");
+                showHint();
+            }
+        }
+
+        function showHint() {
+            let hint = document.getElementById("copyHint");
+            hint.style.display = "block";
+            setTimeout(() => { hint.style.display = "none"; }, 2000);
+        }
+    </script>
+</body>
+</html>
