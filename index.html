@@ -102,8 +102,8 @@
             document.getElementById('gpsDisplay').innerHTML = 
                 `緯度: ${currentLat}<br>經度: ${currentLon}<br>誤差: ${accu}公尺`;
             
-            // 修正過的 Google Maps 連結
-            googleMapLink = `http://googleusercontent.com/maps.google.com/maps?q=${currentLat},${currentLon}`;
+            // 修正過的標準 Google Maps 連結
+            googleMapLink = `https://www.google.com/maps?q=${currentLat},${currentLon}`;
         }
 
         function showError(error) {
